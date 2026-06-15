@@ -1,0 +1,26 @@
+# Build output (root app + the vendored D2SLib-D2R library and its tests/benchmarks)
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# NuGet
+*.nupkg
+packages/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Notes:
+# - etc/SavedGames/*.d2s and *.d2i ARE tracked on purpose (test data the app reads).
+# - D2SLib-D2R/src/Resources/*.txt ARE tracked (game data tables + name tables the app needs).
+# - The app references the library's built DLL via HintPath in D2SLib-D2R/src/bin, which is
+#   ignored above. After a fresh clone, build the library first, then the app:
+#     dotnet build D2SLib-D2R/src/D2SLib.csproj -c Release -f net6.0
+#     dotnet run -c Release

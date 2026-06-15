@@ -1,0 +1,7 @@
+# Diablo II save/stash files are binary — never apply text or end-of-line conversion.
+*.d2s binary
+*.d2i binary
+
+# Game data tables: preserve exact bytes (no EOL normalization) so the parser sees them
+# exactly as recovered/verified.
+D2SLib-D2R/src/Resources/*.txt -text

@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:maxroll.gg)",
+      "WebFetch(domain:d2runewizard.com)",
+      "WebFetch(domain:diablo2.io)",
+      "WebFetch(domain:d2db.net)",
+      "WebFetch(domain:locbones.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(powershell -command \"Get-Content 'C:\\\\Users\\\\szymb\\\\Source\\\\Repos\\\\D2RItemInspector\\\\D2SLib-D2R\\\\src\\\\Resources\\\\ItemStatCost.txt' | Select-Object -First 3\")",
+      "PowerShell(git -C 'C:\\\\Users\\\\szymb\\\\Source\\\\Repos\\\\D2RItemInspector\\\\D2SLib-D2R' show HEAD:src/Resources/ItemStatCost.txt 2>$null | Select-Object -First 1 | ForEach-Object { \\($_ -split \"`t\"\\)[0..2] -join ' | ' })",
+      "WebFetch(domain:www.zezula.net)",
+      "PowerShell(dotnet build \"C:\\\\Users\\\\szymb\\\\Source\\\\Repos\\\\D2RItemInspector\" --nologo -q 2>&1)",
+      "PowerShell(dotnet build \"C:\\\\Users\\\\szymb\\\\Source\\\\Repos\\\\D2RItemInspector\" --nologo -q 2>&1; Write-Host \"EXIT: $LASTEXITCODE\")",
+      "Bash(dotnet run *)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(ls *.csproj)",
+      "Bash(ls */*.csproj)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet clean *)",
+      "Bash(gh api *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(awk -F'\\\\t' '{print $1\"  | ID=\"$2\"  | SB=\"$22\"  | SA=\"$23\"  | SPB=\"$24}')",
+      "Bash(python /tmp/diffsb.py)",
+      "Bash(curl -s \"https://api.github.com/repos/dschu012/D2SLib/git/trees/master?recursive=1\")",
+      "Bash(ls -la)",
+      "Bash(git log *)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(dotnet --list-runtimes)",
+      "Bash(xxd -s 0x80 -l 80 \"etc/SavedGames/Bojazliwy.d2s\")",
+      "Bash(xxd -s 0x80 -l 80 \"etc/SavedGames/Elza.d2s\")",
+      "Bash(cd \"C:\\\\Users\\\\szymb\\\\Source\\\\Repos\\\\D2RItemInspector\" && echo \"=== D2SLib-D2R tree \\(non-bin/obj\\) ===\" && find D2SLib-D2R -type f -not -path \"*/bin/*\" -not -path \"*/obj/*\" 2>/dev/null | head -40; echo \"=== built DLL present? ===\" && find . -name \"D2SLib.dll\" 2>/dev/null; echo \"=== upstream still in tmp? ===\" && ls /tmp/d2s_upstream/D2SLib-D2R-master/src/Model/Save/D2S.cs /tmp/rotw_save/ 2>&1 | head; echo \"=== app build output? ===\" && find . -name \"D2RItemInspector.dll\" 2>/dev/null)",
+      "Bash(grep -oE \"Resources\\\\\\\\\\\\\\\\[A-Za-z_]+\\\\.txt\" D2SLib-D2R/src/D2SLib.csproj)"
+    ]
+  }
+}
