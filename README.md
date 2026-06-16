@@ -31,15 +31,18 @@ dotnet run -c Release
 
 If you edit anything under `D2SLib-D2R/src`, re-run step 1 before re-running the app (the DLL is not rebuilt automatically).
 
-## Providing your own saves
+## Saves it reads
 
-The app reads **every** `.d2s` and `.d2i` file in `etc/SavedGames/`. Copy your saves there from the D2R save folder:
+The app reads **every** `.d2s` and `.d2i` file directly from your live D2R save folder:
 
 ```
 %USERPROFILE%\Saved Games\Diablo II Resurrected
 ```
 
-Each file is parsed independently — if one save can't be read it's reported and the run continues.
+so the report always reflects your current game state — just exit to the menu (so the game flushes
+the files) and re-run / refresh. The path is a constant in `Program.cs` (`saveDirPath`); change it
+there if your saves live elsewhere. Each file is parsed independently — if one can't be read it's
+reported and the run continues.
 
 ## Output
 
@@ -75,7 +78,8 @@ Shared stashes: 2 parsed, 0 failed (of 2)
 Item collection is separate from the console output, so you can consume the data directly. `SaveInspector.Collect()` returns an `InspectionResult` — dictionaries of `CharacterData` / `StashData` keyed by file name:
 
 ```csharp
-var inspector = new SaveInspector(@"etc\SavedGames", @"D2SLib-D2R\src\Resources");
+string saveDir = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Saved Games\Diablo II Resurrected");
+var inspector = new SaveInspector(saveDir, @"D2SLib-D2R\src\Resources");
 InspectionResult result = inspector.Collect();
 
 CharacterData elza = result.Characters["Elza.d2s"];

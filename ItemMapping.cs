@@ -2,12 +2,18 @@ using D2SLib.Model.Save;
 
 namespace D2RItemInspector;
 
-/// <summary>Maps parsed <see cref="Item"/>s to <see cref="ItemData"/>, resolving names and stack quantities.</summary>
+/// <summary>Maps parsed <see cref="Item"/>s to <see cref="ItemData"/>, resolving names, stack
+/// quantities, and the enriched report fields.</summary>
 public sealed class ItemMapping
 {
     private readonly ItemNameResolver _names;
+    private readonly ItemEnricher _enricher;
 
-    public ItemMapping(ItemNameResolver names) => _names = names;
+    public ItemMapping(ItemNameResolver names, ItemEnricher enricher)
+    {
+        _names = names;
+        _enricher = enricher;
+    }
 
     /// <summary>
     /// Builds an <see cref="ItemData"/> for one item, or returns null for an empty "ghost" shared-stash
@@ -20,12 +26,14 @@ public sealed class ItemMapping
         // (non-stash-stackable) gear -> quantity 1.
         if (item.CompactExtra == 1) return null;
         int quantity = item.CompactExtra < 2 ? 1 : item.CompactExtra >> 1;
-        return new ItemData
+        var data = new ItemData
         {
             Name = _names.FullName(item),
             Quantity = quantity,
             Sockets = item.SocketedItems.Select(_names.FullName).ToList(),
         };
+        _enricher.Enrich(item, data);
+        return data;
     }
 
     /// <summary>Maps a list of items, dropping ghost stacks.</summary>

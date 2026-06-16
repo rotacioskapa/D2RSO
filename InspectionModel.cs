@@ -1,11 +1,34 @@
 namespace D2RItemInspector;
 
-/// <summary>A single item: its resolved display name, stack quantity, and any socketed item names.</summary>
+public enum ItemRarity { LowQuality, Normal, Superior, Magic, Rare, Crafted, Set, Unique }
+
+public enum BaseTier { Normal, Exceptional, Elite }
+
+/// <summary>A single item with the data needed for both the console output and the HTML report.</summary>
 public sealed class ItemData
 {
+    // Used by the console renderer (full name incl. base/eth/sockets), unchanged behaviour.
     public required string Name { get; init; }
     public int Quantity { get; init; } = 1;
     public List<string> Sockets { get; init; } = new();
+
+    // Enriched fields for the HTML report (populated by ItemEnricher).
+    public string DisplayName { get; set; } = "";   // clean name for the report's Name column
+    public ItemRarity Rarity { get; set; }
+    public bool IsRuneword { get; set; }
+    public string? RunewordName { get; set; }
+    public string ColorClass { get; set; } = "white"; // CSS class: white/gray/magic/rare/set/unique/crafted
+    public string? TypeCategory { get; set; }        // null = not equipment (excluded from report)
+    public string BaseName { get; set; } = "";
+    public BaseTier BaseQuality { get; set; }
+    public string? SetName { get; set; }
+    public int SocketCount { get; set; }
+    public int RequiredLevel { get; set; }
+    public int RequiredStrength { get; set; }
+    public int RequiredDexterity { get; set; }
+    public string? AllowedClass { get; set; }        // null = usable by all classes
+    public bool Ethereal { get; set; }
+    public bool Equipped { get; set; }
 }
 
 /// <summary>A character's hired mercenary and its equipped items.</summary>

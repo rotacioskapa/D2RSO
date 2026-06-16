@@ -15,7 +15,8 @@ public sealed class SaveInspector
     public SaveInspector(string saveDir, string resourceDir)
     {
         _saveDir = saveDir;
-        var mapping = new ItemMapping(new ItemNameResolver(resourceDir));
+        var resolver = new ItemNameResolver(resourceDir);
+        var mapping = new ItemMapping(resolver, new ItemEnricher(resolver, resourceDir));
         _characters = new CharacterInspector(mapping);
         _stashes = new SharedStashInspector(mapping);
     }

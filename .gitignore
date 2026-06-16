@@ -18,9 +18,16 @@ Thumbs.db
 .DS_Store
 
 # Notes:
-# - etc/SavedGames/*.d2s and *.d2i ARE tracked on purpose (test data the app reads).
+# - Saves are read from your live D2R folder (%USERPROFILE%\Saved Games\Diablo II Resurrected),
+#   not from the repo.
 # - D2SLib-D2R/src/Resources/*.txt ARE tracked (game data tables + name tables the app needs).
 # - The app references the library's built DLL via HintPath in D2SLib-D2R/src/bin, which is
 #   ignored above. After a fresh clone, build the library first, then the app:
 #     dotnet build D2SLib-D2R/src/D2SLib.csproj -c Release -f net6.0
 #     dotnet run -c Release
+
+# Claude Code personal/local settings (per-user, not shared)
+.claude/settings.local.json
+
+# Generated HTML report
+items.html

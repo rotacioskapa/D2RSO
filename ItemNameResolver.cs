@@ -52,6 +52,43 @@ public sealed class ItemNameResolver
         return $"{name}{ethereal}{sockets}";
     }
 
+    /// <summary>Base item name (e.g. "Monarch"), ignoring quality/affixes.</summary>
+    public string BaseNameOf(Item item) => BaseName(item);
+
+    /// <summary>Clean item name for the report's Name column — no "(base)" suffix, no eth/socket tags.</summary>
+    public string DisplayName(Item item)
+    {
+        if (item.IsEar) return $"Ear of {item.PlayerName}";
+        string baseName = BaseName(item);
+        if (item.IsRuneword) return RunewordName((int)item.RunewordId);
+        return item.Quality switch
+        {
+            ItemQuality.Unique => Lookup(_uniques, (int)item.FileIndex, baseName),
+            ItemQuality.Set => Lookup(_sets, (int)item.FileIndex, baseName),
+            ItemQuality.Magic => JoinNonEmpty(MagicPrefix(item), baseName, MagicSuffix(item)),
+            ItemQuality.Rare or ItemQuality.Craft => $"{RareAffix(item.RarePrefixId)} {RareAffix(item.RareSuffixId)}".Trim(),
+            ItemQuality.Superior => $"Superior {baseName}",
+            ItemQuality.Inferior => $"{InferiorPrefix((int)item.FileIndex)} {baseName}".Trim(),
+            _ => baseName,
+        };
+    }
+
+    /// <summary>Runeword name if this item is a runeword, else null.</summary>
+    public string? RunewordNameOf(Item item) => item.IsRuneword ? RunewordName((int)item.RunewordId) : null;
+
+    /// <summary>Set name if this item is a set item, else null.</summary>
+    public string? SetNameOf(Item item) =>
+        item.Quality == ItemQuality.Set && _sets.TryGetValue((int)item.FileIndex, out var s) ? s : null;
+
+    // Low-quality (inferior) prefix by subtype index. Best-effort standard D2 set; RotW data may differ.
+    private static string InferiorPrefix(int fileIndex) => fileIndex switch
+    {
+        0 => "Crude",
+        1 => "Cracked",
+        2 => "Damaged",
+        _ => "Low Quality",
+    };
+
     private static string BaseName(Item item) =>
         Core.MetaData.ItemsData.GetByCode(item.Code)?["name"].Value ?? item.Code.Trim();
 
