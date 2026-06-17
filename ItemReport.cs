@@ -21,6 +21,7 @@ public sealed class ReportRow
     public bool Eth { get; init; }
     public string Owner { get; init; } = "";
     public string Source { get; init; } = "";
+    public List<StatLine> Stats { get; init; } = new(); // formatted mod lines for the hover tooltip
 }
 
 /// <summary>Flattens an <see cref="InspectionResult"/> into report rows, keeping only equipment.</summary>
@@ -39,7 +40,7 @@ public static class ItemReport
         }
         foreach (var s in result.Stashes.Values)
             foreach (var tab in s.Tabs)
-                foreach (var it in tab.Items) Add(rows, it, "Shared Stash", $"Tab {tab.Index}");
+                foreach (var it in tab.Items) Add(rows, it, "Shared Stash", $"Tab {tab.Index + 1}");
         return rows;
     }
 
@@ -65,6 +66,7 @@ public static class ItemReport
             Eth = it.Ethereal,
             Owner = owner,
             Source = source,
+            Stats = it.Stats,
         });
     }
 

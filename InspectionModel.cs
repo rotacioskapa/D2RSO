@@ -29,6 +29,14 @@ public sealed class ItemData
     public string? AllowedClass { get; set; }        // null = usable by all classes
     public bool Ethereal { get; set; }
     public bool Equipped { get; set; }
+    public List<StatLine> Stats { get; set; } = new(); // formatted mod lines for the hover tooltip
+}
+
+/// <summary>One formatted mod line for the tooltip. <see cref="Set"/> = granted by a partial set bonus.</summary>
+public sealed class StatLine
+{
+    public string Text { get; init; } = "";
+    public bool Set { get; init; }
 }
 
 /// <summary>A character's hired mercenary and its equipped items.</summary>

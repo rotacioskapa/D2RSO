@@ -42,6 +42,10 @@ public static class HtmlReport
   .sock { color:#8ab4ff; cursor:help; }
   .muted { color:#5a5a5a; }
   .ethsfx { font-style:italic; opacity:.8; }
+  td[data-tip] { cursor:help; }
+  .tip { position:absolute; display:none; z-index:50; background:#0c0c0c; border:1px solid #555; border-radius:5px; padding:7px 10px; font-size:12px; color:#cfcfcf; pointer-events:none; max-width:380px; box-shadow:0 5px 18px rgba(0,0,0,.7); }
+  .tip div { white-space:nowrap; }
+  .tip .setb { color:#22d422; }
   .fitem { display:flex; flex-direction:column; font-size:11px; color:#9a9a9a; gap:3px; }
   details.multi > summary { list-style:none; cursor:pointer; background:#2c2c2c; border:1px solid #444; border-radius:4px; padding:4px 8px; font-size:13px; color:#eee; min-width:96px; }
   details.multi > summary::-webkit-details-marker { display:none; }
@@ -84,6 +88,7 @@ public static class HtmlReport
   </tr></thead>
   <tbody id="rows"></tbody>
 </table>
+<div id="tip" class="tip"></div>
 <script>
 const DATA = __DATA__;
 const $ = id => document.getElementById(id);
@@ -143,8 +148,9 @@ function rowHtml(r){
     : '<span class="muted">&mdash;</span>';
   const cell = v => '<td>'+(v===''||v==null?'<span class="muted">&mdash;</span>':esc(v))+'</td>';
   const nm = esc(r.Name) + (r.Eth ? ' <span class="ethsfx">(eth)</span>' : '');
+  const tip = (r.Stats && r.Stats.length) ? ' data-tip="'+esc(JSON.stringify(r.Stats))+'"' : '';
   return '<tr>'
-    + '<td class="'+esc(r.Color)+'">'+nm+'</td>'
+    + '<td class="'+esc(r.Color)+'"'+tip+'>'+nm+'</td>'
     + '<td>'+esc(r.Owner)+' &middot; <span class="muted">'+esc(r.Source)+'</span></td>'
     + cell(r.Type) + cell(r.Base) + cell(r.BaseQuality) + cell(r.Set)
     + '<td>'+sock+'</td>'
@@ -206,6 +212,21 @@ document.querySelectorAll('details.multi').forEach(d => d.addEventListener('togg
 document.addEventListener('click', e => {
   if (!e.target.closest('details.multi')) document.querySelectorAll('details.multi[open]').forEach(o => o.open = false);
 });
+
+// Floating stats tooltip on hovering an item name.
+const tipEl = $('tip'), rowsEl = $('rows');
+rowsEl.addEventListener('mouseover', e => {
+  const td = e.target.closest('td[data-tip]');
+  if (td) {
+    const lines = JSON.parse(td.dataset.tip);
+    tipEl.innerHTML = lines.map(s => '<div'+(s.Set?' class="setb"':'')+'>'+esc(s.Text)+'</div>').join('');
+    tipEl.style.display = 'block';
+  } else tipEl.style.display = 'none';
+});
+rowsEl.addEventListener('mousemove', e => {
+  if (tipEl.style.display === 'block') { tipEl.style.left = (e.pageX + 14) + 'px'; tipEl.style.top = (e.pageY + 14) + 'px'; }
+});
+rowsEl.addEventListener('mouseleave', () => tipEl.style.display = 'none');
 
 render();
 </script>

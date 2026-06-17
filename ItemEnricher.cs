@@ -37,6 +37,7 @@ public sealed class ItemEnricher
         data.DisplayName = _names.DisplayName(item);
         data.BaseName = _names.BaseNameOf(item);
         data.Rarity = MapRarity(item.Quality);
+        data.Stats = StatFormatter.Format(item);
         data.SocketCount = item.IsSocketed && item.TotalNumberOfSockets > 0
             ? item.TotalNumberOfSockets : item.NumberOfSocketedItems;
         data.ColorClass = ComputeColor(data);
