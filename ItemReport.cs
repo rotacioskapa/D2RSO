@@ -12,6 +12,7 @@ public sealed class ReportRow
     public string Base { get; init; } = "";
     public string BaseQuality { get; init; } = "";
     public string? Set { get; init; }
+    public List<string> SetBonuses { get; init; } = new(); // whole-set bonuses, for the Set tooltip
     public int Sockets { get; init; }
     public List<string> SocketItems { get; init; } = new();
     public int ReqLevel { get; init; }
@@ -57,6 +58,7 @@ public static class ItemReport
             Base = it.BaseName,
             BaseQuality = it.BaseQuality.ToString(),
             Set = it.SetName,
+            SetBonuses = it.SetBonuses,
             Sockets = it.SocketCount,
             SocketItems = it.Sockets,
             ReqLevel = it.RequiredLevel,

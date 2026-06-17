@@ -5,3 +5,4 @@
 # Game data tables: preserve exact bytes (no EOL normalization) so the parser sees them
 # exactly as recovered/verified.
 D2SLib-D2R/src/Resources/*.txt -text
+D2SLib-D2R/src/Resources/strings/*.json -text

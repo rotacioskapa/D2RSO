@@ -9,8 +9,10 @@ namespace D2RItemInspector;
 /// </summary>
 public sealed class ItemNameResolver
 {
+    private readonly StringTable _strings;
     private readonly Dictionary<int, string> _uniques;
     private readonly Dictionary<int, string> _sets;
+    private readonly Dictionary<int, string> _setParents; // set-item id -> parent set key
     private readonly List<string[]> _runes;
     private readonly List<string[]> _magicPrefixes;
     private readonly List<string[]> _magicSuffixes;
@@ -20,8 +22,12 @@ public sealed class ItemNameResolver
     public ItemNameResolver(string resourceDir)
     {
         string Res(string file) => Path.Combine(resourceDir, file);
+        // Data tables (uniqueitems/setitems "index", base-item code) hold a string Key; the JSON
+        // string table maps it to the in-game display name (fixing e.g. "Aldur's Gauntlet").
+        _strings = new StringTable(Path.Combine(resourceDir, "strings"), "item-names.json");
         _uniques = LoadById(Res("uniqueitems.txt"));
         _sets = LoadById(Res("setitems.txt"));
+        _setParents = LoadIdToCol(Res("setitems.txt"), "ID", "set");
         _runes = LoadTsv(Res("runes.txt"));
         _magicPrefixes = LoadTsv(Res("magicprefix.txt"));
         _magicSuffixes = LoadTsv(Res("magicsuffix.txt"));
@@ -76,9 +82,13 @@ public sealed class ItemNameResolver
     /// <summary>Runeword name if this item is a runeword, else null.</summary>
     public string? RunewordNameOf(Item item) => item.IsRuneword ? RunewordName((int)item.RunewordId) : null;
 
-    /// <summary>Set name if this item is a set item, else null.</summary>
+    /// <summary>Parent-set name if this item is a set item (e.g. "Cathan's Traps"), else null.</summary>
     public string? SetNameOf(Item item) =>
-        item.Quality == ItemQuality.Set && _sets.TryGetValue((int)item.FileIndex, out var s) ? s : null;
+        SetKeyOf(item) is { } key ? (_strings.Get(key) ?? key) : null;
+
+    /// <summary>Parent-set key (sets.txt index) of a set item, for looking up whole-set bonuses.</summary>
+    public string? SetKeyOf(Item item) =>
+        item.Quality == ItemQuality.Set && _setParents.TryGetValue((int)item.FileIndex, out var key) ? key : null;
 
     // Low-quality (inferior) prefix by subtype index. Best-effort standard D2 set; RotW data may differ.
     private static string InferiorPrefix(int fileIndex) => fileIndex switch
@@ -89,8 +99,13 @@ public sealed class ItemNameResolver
         _ => "Low Quality",
     };
 
-    private static string BaseName(Item item) =>
-        Core.MetaData.ItemsData.GetByCode(item.Code)?["name"].Value ?? item.Code.Trim();
+    private string BaseName(Item item)
+    {
+        string code = item.Code.Trim();
+        return _strings.Get(code)
+            ?? Core.MetaData.ItemsData.GetByCode(item.Code)?["name"].Value
+            ?? code;
+    }
 
     private string RunewordName(int runewordId)
     {
@@ -107,8 +122,9 @@ public sealed class ItemNameResolver
     private static string Affix(List<string[]> table, int id) =>
         id >= 1 && id <= table.Count ? table[id - 1][0] : "";
 
-    private static string Lookup(Dictionary<int, string> table, int id, string fallback) =>
-        table.TryGetValue(id, out var name) ? name : fallback;
+    // Resolve a unique/set id -> its string Key -> the in-game display name.
+    private string Lookup(Dictionary<int, string> table, int id, string fallback) =>
+        table.TryGetValue(id, out var key) ? (_strings.Get(key) ?? key) : fallback;
 
     private static string JoinNonEmpty(params string[] parts) =>
         string.Join(" ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
@@ -125,6 +141,25 @@ public sealed class ItemNameResolver
         foreach (var row in LoadTsv(file))
             if (row.Length > 1 && int.TryParse(row[1], out int id) && !map.ContainsKey(id))
                 map[id] = row[0];
+        return map;
+    }
+
+    // Maps a numeric id column to a string column (both by header name; "*" prefix tolerated).
+    private static Dictionary<int, string> LoadIdToCol(string file, string idCol, string valCol)
+    {
+        var map = new Dictionary<int, string>();
+        var lines = File.ReadAllLines(file);
+        if (lines.Length == 0) return map;
+        var header = lines[0].Split('\t');
+        int ii = Array.FindIndex(header, h => h.TrimStart('*').Trim() == idCol);
+        int vi = Array.FindIndex(header, h => h.Trim() == valCol);
+        if (ii < 0 || vi < 0) return map;
+        foreach (var line in lines.Skip(1))
+        {
+            var c = line.Split('\t');
+            if (ii < c.Length && vi < c.Length && int.TryParse(c[ii], out int id))
+                map.TryAdd(id, c[vi]);
+        }
         return map;
     }
 }

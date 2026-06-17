@@ -16,6 +16,11 @@ public sealed class ItemEnricher
     private readonly Dictionary<int, int> _setLvlReq;    // set *ID -> required level
     private readonly List<int> _magicPrefixLvlReq;       // affix id -> required level (1-based)
     private readonly List<int> _magicSuffixLvlReq;
+    private readonly Dictionary<int, string> _skillNames; // skill *Id -> name
+    private readonly string[][] _skillTabs;               // [classId][localTab 0-2] -> tree name
+
+    // Class codes (classId order) used by the SkillCategory<code><1-3> string keys.
+    private static readonly string[] ClassCodes = { "Am", "So", "Ne", "Pa", "Ba", "Dr", "As", "Wa" };
 
     public ItemEnricher(ItemNameResolver names, string resourceDir)
     {
@@ -25,6 +30,27 @@ public sealed class ItemEnricher
         _setLvlReq = LoadKeyValMap(Res("setitems.txt"), "ID", "lvl req");
         _magicPrefixLvlReq = LoadColumnInts(Res("magicprefix.txt"), "levelreq");
         _magicSuffixLvlReq = LoadColumnInts(Res("magicsuffix.txt"), "levelreq");
+        _skillNames = LoadSkillNames(Res("skills.txt"));
+        _skillTabs = BuildSkillTabs(new StringTable(Path.Combine(resourceDir, "strings"), "skills.json"));
+        _setBonuses = new SetBonusResolver(Res("sets.txt"), SkillName);
+    }
+
+    private readonly SetBonusResolver _setBonuses;
+
+    private string? SkillName(int id) =>
+        _skillNames.TryGetValue(id, out var n) && !string.IsNullOrWhiteSpace(n) ? n : null;
+
+    // Skill-tree names per class, from the SkillCategory<code><1-3> string keys (localTab 0 -> "...1").
+    private static string[][] BuildSkillTabs(StringTable strings)
+    {
+        var tabs = new string[ClassCodes.Length][];
+        for (int c = 0; c < ClassCodes.Length; c++)
+        {
+            tabs[c] = new string[3];
+            for (int t = 0; t < 3; t++)
+                tabs[c][t] = strings.Get($"SkillCategory{ClassCodes[c]}{t + 1}") ?? "Skill";
+        }
+        return tabs;
     }
 
     public void Enrich(Item item, ItemData data)
@@ -34,10 +60,12 @@ public sealed class ItemEnricher
         data.IsRuneword = item.IsRuneword;
         data.RunewordName = _names.RunewordNameOf(item);
         data.SetName = _names.SetNameOf(item);
+        if (_names.SetKeyOf(item) is { } setKey && _setBonuses.Get(setKey) is { } sb)
+            data.SetBonuses = sb;
         data.DisplayName = _names.DisplayName(item);
         data.BaseName = _names.BaseNameOf(item);
         data.Rarity = MapRarity(item.Quality);
-        data.Stats = StatFormatter.Format(item);
+        data.Stats = StatFormatter.Format(item, SkillName, _skillTabs);
         data.SocketCount = item.IsSocketed && item.TotalNumberOfSockets > 0
             ? item.TotalNumberOfSockets : item.NumberOfSocketedItems;
         data.ColorClass = ComputeColor(data);
@@ -53,6 +81,46 @@ public sealed class ItemEnricher
         data.RequiredStrength = GetInt(file, row, "reqstr");
         data.RequiredDexterity = GetInt(file, row, "reqdex");
         data.RequiredLevel = ComputeReqLevel(item, file, row);
+        AddDefenseOrDamage(item, data, file, row);
+    }
+
+    // Prepend the item's defense (armor) or damage range (weapons) to the tooltip, like the
+    // in-game header line above the magical properties.
+    private static void AddDefenseOrDamage(Item item, ItemData data, DataFile file, DataRow row)
+    {
+        var items = Core.MetaData.ItemsData;
+        string code = item.Code.Trim();
+        if (items.IsArmor(code) && item.Armor > 0)
+        {
+            data.Stats.Insert(0, new StatLine { Text = $"Defense: {item.Armor}" });
+            return;
+        }
+        if (!items.IsWeapon(code)) return;
+
+        int ed = StatVal(item, "item_mindamage_percent");
+        int addMin = StatVal(item, "mindamage"), addMax = StatVal(item, "maxdamage");
+        string? oneH = DamageRange(file, row, "mindam", "maxdam", ed, addMin, addMax);
+        string? twoH = DamageRange(file, row, "2handmindam", "2handmaxdam", ed, addMin, addMax);
+        if (oneH is not null && twoH is not null)
+        {
+            data.Stats.Insert(0, new StatLine { Text = $"Two-Hand Damage: {twoH}" });
+            data.Stats.Insert(0, new StatLine { Text = $"One-Hand Damage: {oneH}" });
+        }
+        else if ((oneH ?? twoH) is { } dmg)
+            data.Stats.Insert(0, new StatLine { Text = $"Damage: {dmg}" });
+    }
+
+    private static int StatVal(Item item, string stat) =>
+        item.StatLists.SelectMany(l => l.Stats).FirstOrDefault(s => s.Stat == stat)?.Value ?? 0;
+
+    // In-game damage = base * (100 + ED%) / 100 + flat added min/max.
+    private static string? DamageRange(DataFile file, DataRow row, string minCol, string maxCol, int ed, int addMin, int addMax)
+    {
+        int bMin = GetInt(file, row, minCol), bMax = GetInt(file, row, maxCol);
+        if (bMin == 0 && bMax == 0) return null;
+        int min = bMin * (100 + ed) / 100 + addMin;
+        int max = bMax * (100 + ed) / 100 + addMax;
+        return $"{min}-{max}";
     }
 
     // ---- classification ----
@@ -215,6 +283,26 @@ public sealed class ItemEnricher
             var c = line.Split('\t');
             if (ki < c.Length && vi < c.Length && int.TryParse(c[ki], out int k) && int.TryParse(c[vi], out int v))
                 map.TryAdd(k, v);
+        }
+        return map;
+    }
+
+    // skills.txt: "*Id" (skill id) -> "skill" (name column).
+    private static Dictionary<int, string> LoadSkillNames(string file)
+    {
+        var map = new Dictionary<int, string>();
+        if (!File.Exists(file)) return map;
+        var lines = File.ReadAllLines(file);
+        if (lines.Length == 0) return map;
+        var header = lines[0].Split('\t');
+        int idi = Array.FindIndex(header, h => h.TrimStart('*').Trim() == "Id");
+        int ni = Array.FindIndex(header, h => h.Trim() == "skill");
+        if (idi < 0 || ni < 0) return map;
+        foreach (var line in lines.Skip(1))
+        {
+            var c = line.Split('\t');
+            if (idi < c.Length && ni < c.Length && int.TryParse(c[idi], out int id))
+                map.TryAdd(id, c[ni].Trim());
         }
         return map;
     }

@@ -13,18 +13,6 @@ public static class StatFormatter
     private static readonly string[] Classes =
         { "Amazon", "Sorceress", "Necromancer", "Paladin", "Barbarian", "Druid", "Assassin", "Warlock" };
 
-    // Per-class skill-tree (tab) names, indexed [classId][localTab 0-2]. Best-effort standard order.
-    private static readonly string[][] SkillTabs =
-    {
-        new[] { "Bow and Crossbow", "Passive and Magic", "Javelin and Spear" }, // Amazon
-        new[] { "Fire", "Lightning", "Cold" },                                   // Sorceress
-        new[] { "Curses", "Poison and Bone", "Summoning" },                      // Necromancer
-        new[] { "Combat", "Offensive Auras", "Defensive Auras" },                // Paladin
-        new[] { "Combat", "Masteries", "Warcries" },                             // Barbarian
-        new[] { "Summoning", "Shape Shifting", "Elemental" },                    // Druid
-        new[] { "Traps", "Shadow Disciplines", "Martial Arts" },                 // Assassin
-    };
-
     // Internal/structural stats or durations shown elsewhere (or folded into another line).
     private static readonly HashSet<string> Skip = new()
     {
@@ -32,20 +20,28 @@ public static class StatFormatter
     };
 
     /// <summary>Stat list[0] = the item's own mods; for a set item, list[1..] are partial-set bonuses.</summary>
-    public static List<StatLine> Format(Item item)
+    public static List<StatLine> Format(Item item, Func<int, string?> skillName, string[][] skillTabs)
     {
         var result = new List<StatLine>();
         bool isSet = item.Quality == ItemQuality.Set;
+        // Partial-set bonuses are stored in extra stat lists, one per set bit; bit b activates at
+        // (b + 2) equipped set items (aprop1 -> 2 items, aprop2 -> 3 items, ...).
+        var setBits = new List<int>();
+        if (isSet)
+            for (int b = 0; b < 8; b++)
+                if ((item.SetItemMask & (1 << b)) != 0) setBits.Add(b);
+
         for (int i = 0; i < item.StatLists.Count; i++)
         {
             bool setBonus = isSet && i > 0;
-            foreach (var text in FormatList(item.StatLists[i].Stats))
-                result.Add(new StatLine { Text = text, Set = setBonus });
+            int items = setBonus && i - 1 < setBits.Count ? setBits[i - 1] + 2 : 0;
+            foreach (var text in FormatList(item.StatLists[i].Stats, skillName, skillTabs))
+                result.Add(new StatLine { Text = items > 0 ? $"{text} ({items} Items)" : text, Set = setBonus });
         }
         return result;
     }
 
-    private static List<string> FormatList(List<ItemStat> stats)
+    private static List<string> FormatList(List<ItemStat> stats, Func<int, string?> skillName, string[][] skillTabs)
     {
         var byName = new Dictionary<string, int>();
         foreach (var s in stats) byName[s.Stat] = s.Value;
@@ -59,7 +55,11 @@ public static class StatFormatter
             handled.Add("item_maxdamage_percent");
             handled.Add("item_mindamage_percent");
         }
+        // +damage distinguishes min-only / max-only / both. Secondary (2-handed) and throw +damage
+        // usually duplicate the primary, so the identical lines collapse via Distinct().
         AddDamage(lines, handled, byName, "mindamage", "maxdamage", "Damage");
+        AddDamage(lines, handled, byName, "secondary_mindamage", "secondary_maxdamage", "Damage");
+        AddDamage(lines, handled, byName, "item_throw_mindamage", "item_throw_maxdamage", "Damage");
         AddDamage(lines, handled, byName, "firemindam", "firemaxdam", "Fire Damage");
         AddDamage(lines, handled, byName, "coldmindam", "coldmaxdam", "Cold Damage");
         AddDamage(lines, handled, byName, "lightmindam", "lightmaxdam", "Lightning Damage");
@@ -75,36 +75,56 @@ public static class StatFormatter
             handled.Add("poisonlength");
         }
 
+        // Combine equal fire/cold/lightning/poison resist into one "All Resistances" line.
+        if (byName.TryGetValue("fireresist", out int allres)
+            && byName.TryGetValue("coldresist", out int cr) && cr == allres
+            && byName.TryGetValue("lightresist", out int lr) && lr == allres
+            && byName.TryGetValue("poisonresist", out int pr) && pr == allres)
+        {
+            lines.Add($"All Resistances {Plus(allres)}%");
+            handled.Add("fireresist");
+            handled.Add("coldresist");
+            handled.Add("lightresist");
+            handled.Add("poisonresist");
+        }
+
         foreach (var s in stats)
         {
             if (handled.Contains(s.Stat) || Skip.Contains(s.Stat)) continue;
-            if (FormatOne(s) is { } line) lines.Add(line);
+            if (FormatOne(s, skillName, skillTabs) is { } line) lines.Add(line);
         }
         return lines.Distinct().ToList();
     }
 
+    // "Adds X-Y <label>" when both present; "+X to Minimum/Maximum <label>" when only one side is.
     private static void AddDamage(List<string> lines, HashSet<string> handled, Dictionary<string, int> b,
         string min, string max, string label)
     {
         if (!b.ContainsKey(min) && !b.ContainsKey(max)) return;
-        int lo = b.GetValueOrDefault(min), hi = b.GetValueOrDefault(max, lo);
-        lines.Add(lo == hi ? $"+{hi} {label}" : $"Adds {lo}-{hi} {label}");
         handled.Add(min);
         handled.Add(max);
+        int mn = b.GetValueOrDefault(min), mx = b.GetValueOrDefault(max);
+        if (mn != 0 && mx != 0) lines.Add($"Adds {mn}-{mx} {label}");
+        else if (mx != 0) lines.Add($"+{mx} to Maximum {label}");
+        else if (mn != 0) lines.Add($"+{mn} to Minimum {label}");
     }
 
-    private static string? FormatOne(ItemStat s)
+    private static string? FormatOne(ItemStat s, Func<int, string?> skillName, string[][] skillTabs)
     {
         int v = s.Value;
+        string Skill(int? id) => id is int i ? (skillName(i) ?? $"Skill #{i}") : "Skill";
 
         // +X to a specific class skill tree. Library field names are misleading: SkillLevel = class id,
         // SkillTab = local tab (0-2), Value = the actual +levels.
         if (s.Stat == "item_addskill_tab")
         {
             int cls = s.SkillLevel ?? 0, tab = s.SkillTab ?? 0;
-            string tabName = cls < SkillTabs.Length && tab is >= 0 and < 3 ? SkillTabs[cls][tab] : "Skill";
+            string tabName = cls < skillTabs.Length && tab is >= 0 and < 3 ? skillTabs[cls][tab] : "Skill";
             return $"+{v} to {tabName} ({ClassName(cls)} Only)";
         }
+        // +X to <element> Skills — the element is in Param (1=Fire confirmed; rest best-effort).
+        if (s.Stat == "item_elemskill")
+            return $"+{v} to {ElemName(s.Param)} Skills";
 
         return s.Stat switch
         {
@@ -149,7 +169,12 @@ public static class StatFormatter
             "magic_damage_reduction" => $"Magic Damage Reduced by {v}",
             "damageresist" => $"Damage Reduced by {v}%",
             "magicresist" => $"Magic Resist +{v}%",
-            "item_lightradius" => $"+{v} to Light Radius",
+            "item_lightradius" => $"{Plus(v)} to Light Radius",
+            "item_halffreezeduration" => "Half Freeze Duration",
+            "item_demon_tohit" => $"+{v} to Attack Rating against Demons",
+            "item_undead_tohit" => $"+{v} to Attack Rating against Undead",
+            "maxdurability" => $"+{v} Maximum Durability",
+            "item_maxdurability_percent" => $"Increase Maximum Durability {v}%",
             "item_attackertakesdamage" => $"Attacker Takes Damage of {v}",
             "item_replenish_durability" => "Replenishes Durability",
             "item_replenish_quantity" => "Replenishes Quantity",
@@ -162,13 +187,14 @@ public static class StatFormatter
             "item_cannotbefrozen" => "Cannot Be Frozen",
             "item_allskills" => $"+{v} to All Skills",
             "item_addclassskills" => $"+{v} to {ClassName(s.Param)} Skill Levels",
-            "item_singleskill" or "item_nonclassskill" or "item_oskill" => $"+{s.SkillLevel ?? v} to Skill #{s.SkillId}",
-            "item_charged_skill" => $"Level {s.SkillLevel} Skill #{s.SkillId} ({v}/{s.MaxCharges} Charges)",
+            // These have Encode=1, so the skill id is in Param (not SkillId) and the level is Value.
+            "item_singleskill" or "item_nonclassskill" or "item_oskill" => $"+{v} to {Skill(s.Param)}",
+            "item_charged_skill" => $"Level {s.SkillLevel} {Skill(s.SkillId)} ({v}/{s.MaxCharges} Charges)",
             "item_skillonattack" or "item_skillonhit" or "item_skillonkill" or "item_skillondeath" or "item_skillongethit"
-                => $"{v}% Chance to cast Level {s.SkillLevel} Skill #{s.SkillId}",
+                => $"{v}% Chance to cast Level {s.SkillLevel} {Skill(s.SkillId)}",
             "armorclass_vs_missile" => $"+{v} Defense vs. Missile",
             "armorclass_vs_hth" => $"+{v} Defense vs. Melee",
-            "item_fractionaltargetac" => "Ignore Target's Defense",
+            "item_fractionaltargetac" or "item_ignoretargetac" => "Ignore Target's Defense",
             "item_absorbmagic" => $"Magic Absorb +{v}",
             "item_absorbfire" => $"Fire Absorb +{v}",
             "item_absorbcold" => $"Cold Absorb +{v}",
@@ -177,6 +203,17 @@ public static class StatFormatter
             "item_absorbfire_percent" => $"Fire Absorb {v}%",
             "item_absorbcold_percent" => $"Cold Absorb {v}%",
             "item_absorblight_percent" => $"Lightning Absorb {v}%",
+            "item_absorb_cold_perlevel" => PerLevel(v, "Cold Absorb"),
+            "item_absorb_fire_perlevel" => PerLevel(v, "Fire Absorb"),
+            "item_absorb_ltng_perlevel" => PerLevel(v, "Lightning Absorb"),
+            "item_absorb_pois_perlevel" => PerLevel(v, "Poison Absorb"),
+            "item_freeze" => $"Freezes Target +{v}",
+            "item_pierce" => $"{v}% Piercing Attack",
+            "item_knockback" => "Knockback",
+            "toblock" => $"+{v}% Increased Chance to Block",
+            "item_attackertakeslightdamage" => $"Attacker Takes Lightning Damage of {v}",
+            "item_poisonlengthresist" => $"Poison Length Reduced by {v}%",
+            "item_healafterdemonkill" => $"+{v} Life after each Demon Kill",
             "item_hp_perlevel" => PerLevel(v, "to Life"),
             "item_mana_perlevel" => PerLevel(v, "to Mana"),
             "item_armor_perlevel" => PerLevel(v, "Defense"),
@@ -208,4 +245,8 @@ public static class StatFormatter
 
     private static string Plus(int v) => v >= 0 ? $"+{v}" : v.ToString();
     private static string ClassName(int? id) => id is >= 0 and < 8 ? Classes[id.Value] : "Class";
+    private static string ElemName(int? p) => p switch
+    {
+        1 => "Fire", 2 => "Lightning", 3 => "Cold", 4 => "Poison", 5 => "Magic", _ => "Elemental",
+    };
 }

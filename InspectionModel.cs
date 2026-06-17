@@ -22,6 +22,7 @@ public sealed class ItemData
     public string BaseName { get; set; } = "";
     public BaseTier BaseQuality { get; set; }
     public string? SetName { get; set; }
+    public List<string> SetBonuses { get; set; } = new(); // whole-set bonuses (for the Set-name tooltip)
     public int SocketCount { get; set; }
     public int RequiredLevel { get; set; }
     public int RequiredStrength { get; set; }
