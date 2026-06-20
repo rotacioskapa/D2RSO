@@ -13,6 +13,7 @@ public sealed class ItemNameResolver
     private readonly Dictionary<int, string> _uniques;
     private readonly Dictionary<int, string> _sets;
     private readonly Dictionary<int, string> _setParents; // set-item id -> parent set key
+    private readonly Dictionary<string, int> _setSizes;   // parent set key -> number of items in the set
     private readonly List<string[]> _runes;
     private readonly List<string[]> _magicPrefixes;
     private readonly List<string[]> _magicSuffixes;
@@ -28,6 +29,7 @@ public sealed class ItemNameResolver
         _uniques = LoadById(Res("uniqueitems.txt"));
         _sets = LoadById(Res("setitems.txt"));
         _setParents = LoadIdToCol(Res("setitems.txt"), "ID", "set");
+        _setSizes = _setParents.Values.GroupBy(k => k).ToDictionary(g => g.Key, g => g.Count());
         _runes = LoadTsv(Res("runes.txt"));
         _magicPrefixes = LoadTsv(Res("magicprefix.txt"));
         _magicSuffixes = LoadTsv(Res("magicsuffix.txt"));
@@ -89,6 +91,10 @@ public sealed class ItemNameResolver
     /// <summary>Parent-set key (sets.txt index) of a set item, for looking up whole-set bonuses.</summary>
     public string? SetKeyOf(Item item) =>
         item.Quality == ItemQuality.Set && _setParents.TryGetValue((int)item.FileIndex, out var key) ? key : null;
+
+    /// <summary>Total number of items in this item's set (0 if not a set item).</summary>
+    public int SetSizeOf(Item item) =>
+        SetKeyOf(item) is { } key && _setSizes.TryGetValue(key, out int n) ? n : 0;
 
     // Low-quality (inferior) prefix by subtype index. Best-effort standard D2 set; RotW data may differ.
     private static string InferiorPrefix(int fileIndex) => fileIndex switch

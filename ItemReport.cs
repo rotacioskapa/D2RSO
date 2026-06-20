@@ -12,6 +12,8 @@ public sealed class ReportRow
     public string Base { get; init; } = "";
     public string BaseQuality { get; init; } = "";
     public string? Set { get; init; }
+    public int SetSize { get; init; }       // total items in the set
+    public int SetOwned { get; set; }       // distinct set items of this set the user owns (filled after build)
     public List<string> SetBonuses { get; init; } = new(); // whole-set bonuses, for the Set tooltip
     public int Sockets { get; init; }
     public List<string> SocketItems { get; init; } = new();
@@ -42,6 +44,13 @@ public static class ItemReport
         foreach (var s in result.Stashes.Values)
             foreach (var tab in s.Tabs)
                 foreach (var it in tab.Items) Add(rows, it, "Shared Stash", $"Tab {tab.Index + 1}");
+
+        // Distinct set pieces owned per set (across all saves) for the "(x / n Items)" tooltip line.
+        var owned = rows.Where(r => r.Set is not null && r.SetSize > 0)
+            .GroupBy(r => r.Set!)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Name).Distinct().Count());
+        foreach (var r in rows)
+            if (r.Set is not null && owned.TryGetValue(r.Set, out int x)) r.SetOwned = x;
         return rows;
     }
 
@@ -58,6 +67,7 @@ public static class ItemReport
             Base = it.BaseName,
             BaseQuality = it.BaseQuality.ToString(),
             Set = it.SetName,
+            SetSize = it.SetSize,
             SetBonuses = it.SetBonuses,
             Sockets = it.SocketCount,
             SocketItems = it.Sockets,

@@ -60,6 +60,7 @@ public sealed class ItemEnricher
         data.IsRuneword = item.IsRuneword;
         data.RunewordName = _names.RunewordNameOf(item);
         data.SetName = _names.SetNameOf(item);
+        data.SetSize = _names.SetSizeOf(item);
         if (_names.SetKeyOf(item) is { } setKey && _setBonuses.Get(setKey) is { } sb)
             data.SetBonuses = sb;
         data.DisplayName = _names.DisplayName(item);
@@ -84,8 +85,9 @@ public sealed class ItemEnricher
         AddDefenseOrDamage(item, data, file, row);
     }
 
-    // Prepend the item's defense (armor) or damage range (weapons) to the tooltip, like the
-    // in-game header line above the magical properties.
+    // Prepend the item's BASE defense (armor) or BASE damage range (weapons) to the tooltip.
+    // Modifiers (% enhanced defense/damage, ethereal, socket/affix bonuses) are shown as their own
+    // lines, not folded into these — the exact in-game total isn't reliably reconstructable.
     private static void AddDefenseOrDamage(Item item, ItemData data, DataFile file, DataRow row)
     {
         var items = Core.MetaData.ItemsData;
@@ -97,10 +99,8 @@ public sealed class ItemEnricher
         }
         if (!items.IsWeapon(code)) return;
 
-        int ed = StatVal(item, "item_mindamage_percent");
-        int addMin = StatVal(item, "mindamage"), addMax = StatVal(item, "maxdamage");
-        string? oneH = DamageRange(file, row, "mindam", "maxdam", ed, addMin, addMax);
-        string? twoH = DamageRange(file, row, "2handmindam", "2handmaxdam", ed, addMin, addMax);
+        string? oneH = DamageRange(file, row, "mindam", "maxdam");
+        string? twoH = DamageRange(file, row, "2handmindam", "2handmaxdam");
         if (oneH is not null && twoH is not null)
         {
             data.Stats.Insert(0, new StatLine { Text = $"Two-Hand Damage: {twoH}" });
@@ -110,17 +110,10 @@ public sealed class ItemEnricher
             data.Stats.Insert(0, new StatLine { Text = $"Damage: {dmg}" });
     }
 
-    private static int StatVal(Item item, string stat) =>
-        item.StatLists.SelectMany(l => l.Stats).FirstOrDefault(s => s.Stat == stat)?.Value ?? 0;
-
-    // In-game damage = base * (100 + ED%) / 100 + flat added min/max.
-    private static string? DamageRange(DataFile file, DataRow row, string minCol, string maxCol, int ed, int addMin, int addMax)
+    private static string? DamageRange(DataFile file, DataRow row, string minCol, string maxCol)
     {
         int bMin = GetInt(file, row, minCol), bMax = GetInt(file, row, maxCol);
-        if (bMin == 0 && bMax == 0) return null;
-        int min = bMin * (100 + ed) / 100 + addMin;
-        int max = bMax * (100 + ed) / 100 + addMax;
-        return $"{min}-{max}";
+        return bMin == 0 && bMax == 0 ? null : $"{bMin}-{bMax}";
     }
 
     // ---- classification ----
