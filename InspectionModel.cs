@@ -23,6 +23,7 @@ public sealed class ItemData
     public BaseTier BaseQuality { get; set; }
     public string? SetName { get; set; }
     public int SetSize { get; set; }                       // total items in the set (0 = not a set item)
+    public List<string> SetPieces { get; set; } = new();  // all piece names in the set (for "missing" list)
     public List<string> SetBonuses { get; set; } = new(); // whole-set bonuses (for the Set-name tooltip)
     public int SocketCount { get; set; }
     public int RequiredLevel { get; set; }
@@ -32,6 +33,7 @@ public sealed class ItemData
     public bool Ethereal { get; set; }
     public bool Equipped { get; set; }
     public List<StatLine> Stats { get; set; } = new(); // formatted mod lines for the hover tooltip
+    public List<string> Features { get; set; } = new(); // feature tags for the Features filter
 }
 
 /// <summary>One formatted mod line for the tooltip. <see cref="Set"/> = granted by a partial set bonus.</summary>

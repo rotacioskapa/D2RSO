@@ -61,12 +61,14 @@ public sealed class ItemEnricher
         data.RunewordName = _names.RunewordNameOf(item);
         data.SetName = _names.SetNameOf(item);
         data.SetSize = _names.SetSizeOf(item);
+        data.SetPieces = _names.SetPiecesOf(item);
         if (_names.SetKeyOf(item) is { } setKey && _setBonuses.Get(setKey) is { } sb)
             data.SetBonuses = sb;
         data.DisplayName = _names.DisplayName(item);
         data.BaseName = _names.BaseNameOf(item);
         data.Rarity = MapRarity(item.Quality);
         data.Stats = StatFormatter.Format(item, SkillName, _skillTabs);
+        data.Features = ExtractFeatures(item);
         data.SocketCount = item.IsSocketed && item.TotalNumberOfSockets > 0
             ? item.TotalNumberOfSockets : item.NumberOfSocketedItems;
         data.ColorClass = ComputeColor(data);
@@ -85,19 +87,70 @@ public sealed class ItemEnricher
         AddDefenseOrDamage(item, data, file, row);
     }
 
-    // Prepend the item's BASE defense (armor) or BASE damage range (weapons) to the tooltip.
-    // Modifiers (% enhanced defense/damage, ethereal, socket/affix bonuses) are shown as their own
-    // lines, not folded into these — the exact in-game total isn't reliably reconstructable.
+    // ---- feature tags (for the Features filter) ----
+
+    // Stat name -> filter feature label. Resist stats are listed individually; an "all resistances"
+    // item carries all four resist stats, so it naturally matches each of Fire/Cold/Lightning/Poison.
+    private static readonly Dictionary<string, string> FeatureLabels = new()
+    {
+        ["lifedrainmindam"] = "Life Stolen per Hit",
+        ["item_fastercastrate"] = "Faster Cast Rate",
+        ["item_crushingblow"] = "Chance of Crushing Blow",
+        ["item_openwounds"] = "Chance of Open Wounds",
+        ["item_cannotbefrozen"] = "Cannot Be Frozen",
+        ["item_restinpeace"] = "Slain Monsters Rest in Peace",
+        ["item_magicbonus"] = "Better Chance of Getting Magic Items",
+        ["item_fasterattackrate"] = "Increased Attack Speed",
+        ["item_fastergethitrate"] = "Faster Hit Recovery",
+        ["fireresist"] = "Fire Resist",
+        ["coldresist"] = "Cold Resist",
+        ["lightresist"] = "Lightning Resist",
+        ["poisonresist"] = "Poison Resist",
+        ["item_fastermovevelocity"] = "Faster Run/Walk",
+        ["strength"] = "+ to Strength",
+        ["dexterity"] = "+ to Dexterity",
+        ["maxhp"] = "+ to Life",
+        ["maxmana"] = "+ to Mana",
+        ["item_indesctructible"] = "Indestructible",
+    };
+
+    // Boolean flags carry no magnitude (0 save bits), so presence — not a positive value — counts.
+    private static readonly HashSet<string> FlagFeatures = new()
+    {
+        "item_cannotbefrozen", "item_restinpeace", "item_indesctructible",
+    };
+
+    private static List<string> ExtractFeatures(Item item)
+    {
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+        var byName = new Dictionary<string, int>();
+        foreach (var s in item.StatLists.FirstOrDefault()?.Stats ?? Enumerable.Empty<ItemStat>())
+        {
+            byName.TryAdd(s.Stat, s.Value);
+            if (FeatureLabels.TryGetValue(s.Stat, out var label) && (FlagFeatures.Contains(s.Stat) || s.Value > 0))
+                found.Add(label);
+        }
+        // Combined features: all four are present, equal and positive (same condition the tooltip uses).
+        if (AllEqual(byName, "fireresist", "coldresist", "lightresist", "poisonresist"))
+            found.Add("All Resistances");
+        if (AllEqual(byName, "strength", "dexterity", "vitality", "energy"))
+            found.Add("+ All Attributes");
+        return found.ToList();
+    }
+
+    private static bool AllEqual(Dictionary<string, int> byName, params string[] stats)
+    {
+        if (!byName.TryGetValue(stats[0], out int v) || v <= 0) return false;
+        return stats.All(s => byName.TryGetValue(s, out int x) && x == v);
+    }
+
+    // Prepend the weapon's BASE damage range to the tooltip. Armor defense is intentionally omitted:
+    // the parsed armor field doesn't reliably match the in-game value (it's neither the base nor the
+    // displayed total), so any number we'd show would be wrong. The % Enhanced Defense and flat
+    // +Defense modifiers still appear as their own stat lines.
     private static void AddDefenseOrDamage(Item item, ItemData data, DataFile file, DataRow row)
     {
-        var items = Core.MetaData.ItemsData;
-        string code = item.Code.Trim();
-        if (items.IsArmor(code) && item.Armor > 0)
-        {
-            data.Stats.Insert(0, new StatLine { Text = $"Defense: {item.Armor}" });
-            return;
-        }
-        if (!items.IsWeapon(code)) return;
+        if (!Core.MetaData.ItemsData.IsWeapon(item.Code.Trim())) return;
 
         string? oneH = DamageRange(file, row, "mindam", "maxdam");
         string? twoH = DamageRange(file, row, "2handmindam", "2handmaxdam");

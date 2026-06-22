@@ -25,15 +25,30 @@ public sealed class SetBonusResolver
             var c = line.Split('\t');
             if (idx >= c.Length || string.IsNullOrWhiteSpace(c[idx])) continue;
             var list = new List<string>();
+            // Bonuses grouped by tier, each under a header line (ends with ':' so the UI can style it).
             // Partial bonuses: tiers 2-5 set items, two properties (a/b) each.
             foreach (int tier in new[] { 2, 3, 4, 5 })
+            {
+                var tierBonuses = new List<string>();
                 foreach (string s in new[] { "a", "b" })
                     if (Prop(c, col, $"PCode{tier}{s}", $"PParam{tier}{s}", $"PMin{tier}{s}", $"PMax{tier}{s}", skillName) is { } p)
-                        list.Add($"{p} ({tier} Items)");
+                        tierBonuses.Add(p);
+                if (tierBonuses.Count > 0)
+                {
+                    list.Add($"{tier} Item Bonuses:");
+                    list.AddRange(tierBonuses);
+                }
+            }
             // Full-set bonus.
+            var full = new List<string>();
             for (int i = 1; i <= 8; i++)
                 if (Prop(c, col, $"FCode{i}", $"FParam{i}", $"FMin{i}", $"FMax{i}", skillName) is { } p)
-                    list.Add($"{p} (Full Set)");
+                    full.Add(p);
+            if (full.Count > 0)
+            {
+                list.Add("Full Set Bonuses:");
+                list.AddRange(full);
+            }
             if (list.Count > 0) _bonuses[c[idx]] = list;
         }
     }
@@ -45,7 +60,9 @@ public sealed class SetBonusResolver
     {
         int ci = col.GetValueOrDefault(codeCol, -1);
         if (ci < 0 || ci >= c.Length || string.IsNullOrWhiteSpace(c[ci])) return null;
-        return Format(c[ci].Trim(), Int(c, col, paramCol), Int(c, col, minCol), Int(c, col, maxCol), skillName);
+        int pi = col.GetValueOrDefault(paramCol, -1);
+        string paramStr = pi >= 0 && pi < c.Length ? c[pi].Trim() : "";
+        return Format(c[ci].Trim(), Int(c, col, paramCol), paramStr, Int(c, col, minCol), Int(c, col, maxCol), skillName);
     }
 
     private static int Int(string[] c, Dictionary<string, int> col, string name)
@@ -55,7 +72,7 @@ public sealed class SetBonusResolver
     }
 
     // Property code -> readable text. Unknown / state-based codes return null (skipped).
-    private static string? Format(string code, int param, int min, int max, Func<int, string?> skillName)
+    private static string? Format(string code, int param, string paramStr, int min, int max, Func<int, string?> skillName)
     {
         string Rng() => min == max ? min.ToString() : $"{min}-{max}";
         string Sk(int id) => skillName(id) ?? $"Skill #{id}";
@@ -132,7 +149,9 @@ public sealed class SetBonusResolver
             "dru" => $"+{min} to Druid Skill Levels",
             "ass" => $"+{min} to Assassin Skill Levels",
             "war" => $"+{min} to Warlock Skill Levels",
-            _ => null, // state/fade/per-level/other -> not shown
+            // "state" applies a hidden state; only Trang-Oul's "monsterset" is a shown effect.
+            "state" => paramStr == "monsterset" ? "Transforms into Vampire" : null,
+            _ => null, // fade/per-level/other state -> not shown
         };
     }
 }

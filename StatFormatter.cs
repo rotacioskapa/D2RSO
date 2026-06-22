@@ -17,6 +17,7 @@ public static class StatFormatter
     private static readonly HashSet<string> Skip = new()
     {
         "item_numsockets", "item_levelreq", "item_levelreqpct", "item_req_percent", "coldlength",
+        "item_extrablood", // internal, not shown in-game
     };
 
     /// <summary>Stat list[0] = the item's own mods; for a set item, list[1..] are partial-set bonuses.</summary>
@@ -75,6 +76,19 @@ public static class StatFormatter
             handled.Add("poisonlength");
         }
 
+        // Combine equal str/energy/dex/vitality into one "+X to All Attributes" line (e.g. Shako).
+        if (byName.TryGetValue("strength", out int allatt) && allatt != 0
+            && byName.TryGetValue("energy", out int en) && en == allatt
+            && byName.TryGetValue("dexterity", out int dx) && dx == allatt
+            && byName.TryGetValue("vitality", out int vt) && vt == allatt)
+        {
+            lines.Add($"{Plus(allatt)} to All Attributes");
+            handled.Add("strength");
+            handled.Add("energy");
+            handled.Add("dexterity");
+            handled.Add("vitality");
+        }
+
         // Combine equal fire/cold/lightning/poison resist into one "All Resistances" line.
         if (byName.TryGetValue("fireresist", out int allres)
             && byName.TryGetValue("coldresist", out int cr) && cr == allres
@@ -128,13 +142,14 @@ public static class StatFormatter
 
         return s.Stat switch
         {
-            "strength" => $"+{v} to Strength",
-            "energy" => $"+{v} to Energy",
-            "dexterity" => $"+{v} to Dexterity",
-            "vitality" => $"+{v} to Vitality",
-            "maxhp" => $"+{v} to Life",
-            "maxmana" => $"+{v} to Mana",
-            "maxstamina" => $"+{v} to Stamina",
+            // Attributes/life/mana can roll negative (e.g. Gull), so use signed formatting.
+            "strength" => $"{Plus(v)} to Strength",
+            "energy" => $"{Plus(v)} to Energy",
+            "dexterity" => $"{Plus(v)} to Dexterity",
+            "vitality" => $"{Plus(v)} to Vitality",
+            "maxhp" => $"{Plus(v)} to Life",
+            "maxmana" => $"{Plus(v)} to Mana",
+            "maxstamina" => $"{Plus(v)} to Stamina",
             "item_maxmana_percent" => $"Increase Maximum Mana {v}%",
             "item_maxhp_percent" => $"Increase Maximum Life {v}%",
             "hpregen" => $"Replenish Life +{v}",
@@ -234,6 +249,8 @@ public static class StatFormatter
             "item_energy_perlevel" => PerLevel(v, "to Energy"),
             "item_vitality_perlevel" => PerLevel(v, "to Vitality"),
             "item_maxdamage_perlevel" => PerLevel(v, "to Maximum Damage"),
+            "item_maxdamage_percent_perlevel" => PerLevelPct(v, "Enhanced Maximum Damage"),
+            "item_deadlystrike_perlevel" => PerLevelPct(v, "Deadly Strike"),
             "item_tohit_perlevel" => PerLevel(v, "to Attack Rating"),
             "item_find_magic_perlevel" => PerLevel(v, "% Better Chance of Magic Items"),
             "item_find_gold_perlevel" => PerLevel(v, "% Extra Gold from Monsters"),
@@ -244,6 +261,10 @@ public static class StatFormatter
     // Per-level stats are stored as (rate * 8); show the per-character-level rate.
     private static string PerLevel(int v, string what) =>
         $"+{(v / 8.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} {what} (Based on Character Level)";
+
+    // Same, but for percentage stats where the "%" hugs the number: "+0.5% Deadly Strike".
+    private static string PerLevelPct(int v, string what) =>
+        $"+{(v / 8.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}% {what} (Based on Character Level)";
 
     // Readable fallback for an unmapped stat (e.g. "item_some_stat" -> "Some Stat: +3").
     private static string? Humanize(string stat, int v)

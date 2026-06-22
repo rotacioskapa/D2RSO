@@ -14,6 +14,7 @@ public sealed class ItemNameResolver
     private readonly Dictionary<int, string> _sets;
     private readonly Dictionary<int, string> _setParents; // set-item id -> parent set key
     private readonly Dictionary<string, int> _setSizes;   // parent set key -> number of items in the set
+    private readonly Dictionary<string, List<string>> _setPieces; // parent set key -> piece display names
     private readonly List<string[]> _runes;
     private readonly List<string[]> _magicPrefixes;
     private readonly List<string[]> _magicSuffixes;
@@ -30,6 +31,7 @@ public sealed class ItemNameResolver
         _sets = LoadById(Res("setitems.txt"));
         _setParents = LoadIdToCol(Res("setitems.txt"), "ID", "set");
         _setSizes = _setParents.Values.GroupBy(k => k).ToDictionary(g => g.Key, g => g.Count());
+        _setPieces = LoadSetPieces(Res("setitems.txt"));
         _runes = LoadTsv(Res("runes.txt"));
         _magicPrefixes = LoadTsv(Res("magicprefix.txt"));
         _magicSuffixes = LoadTsv(Res("magicsuffix.txt"));
@@ -96,6 +98,10 @@ public sealed class ItemNameResolver
     public int SetSizeOf(Item item) =>
         SetKeyOf(item) is { } key && _setSizes.TryGetValue(key, out int n) ? n : 0;
 
+    /// <summary>All piece display names of this item's set (for listing missing pieces).</summary>
+    public List<string> SetPiecesOf(Item item) =>
+        SetKeyOf(item) is { } key && _setPieces.TryGetValue(key, out var pieces) ? pieces : new();
+
     // Low-quality (inferior) prefix by subtype index. Best-effort standard D2 set; RotW data may differ.
     private static string InferiorPrefix(int fileIndex) => fileIndex switch
     {
@@ -122,8 +128,18 @@ public sealed class ItemNameResolver
     private string MagicPrefix(Item item) => Affix(_magicPrefixes, item.MagicPrefixIds[0]);
     private string MagicSuffix(Item item) => Affix(_magicSuffixes, item.MagicSuffixIds[0]);
 
-    private string RareAffix(int id) =>
-        id >= 1 && id <= _rareAffixes.Count ? Capitalize(_rareAffixes[id - 1]) : "";
+    // A few RotW rare-affix words carry a stray internal suffix not shown in-game (e.g. "GhoulRI").
+    private static readonly Dictionary<string, string> RareAffixFixups = new()
+    {
+        ["GhoulRI"] = "Ghoul",
+    };
+
+    private string RareAffix(int id)
+    {
+        if (id < 1 || id > _rareAffixes.Count) return "";
+        string word = _rareAffixes[id - 1];
+        return Capitalize(RareAffixFixups.GetValueOrDefault(word, word));
+    }
 
     private static string Affix(List<string[]> table, int id) =>
         id >= 1 && id <= table.Count ? table[id - 1][0] : "";
@@ -140,6 +156,26 @@ public sealed class ItemNameResolver
 
     private static List<string[]> LoadTsv(string file) =>
         File.ReadAllLines(file).Skip(1).Select(line => line.Split('\t')).ToList();
+
+    // parent set key ("set" column) -> the display names of its member pieces (index column, resolved).
+    private Dictionary<string, List<string>> LoadSetPieces(string file)
+    {
+        var map = new Dictionary<string, List<string>>();
+        var lines = File.ReadAllLines(file);
+        if (lines.Length == 0) return map;
+        var header = lines[0].Split('\t');
+        int si = Array.FindIndex(header, h => h.Trim() == "set");
+        if (si < 0) return map;
+        foreach (var line in lines.Skip(1))
+        {
+            var c = line.Split('\t');
+            if (c.Length <= si || string.IsNullOrWhiteSpace(c[0]) || string.IsNullOrWhiteSpace(c[si])) continue;
+            string pieceName = _strings.Get(c[0]) ?? c[0];
+            if (!map.TryGetValue(c[si], out var list)) map[c[si]] = list = new();
+            if (!list.Contains(pieceName)) list.Add(pieceName);
+        }
+        return map;
+    }
 
     private static Dictionary<int, string> LoadById(string file)
     {

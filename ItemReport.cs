@@ -14,6 +14,8 @@ public sealed class ReportRow
     public string? Set { get; init; }
     public int SetSize { get; init; }       // total items in the set
     public int SetOwned { get; set; }       // distinct set items of this set the user owns (filled after build)
+    public List<string> SetPieces { get; init; } = new();  // all piece names of the set
+    public List<string> SetMissing { get; set; } = new();  // pieces of the set not owned (filled after build)
     public List<string> SetBonuses { get; init; } = new(); // whole-set bonuses, for the Set tooltip
     public int Sockets { get; init; }
     public List<string> SocketItems { get; init; } = new();
@@ -25,6 +27,7 @@ public sealed class ReportRow
     public string Owner { get; init; } = "";
     public string Source { get; init; } = "";
     public List<StatLine> Stats { get; init; } = new(); // formatted mod lines for the hover tooltip
+    public List<string> Features { get; init; } = new(); // feature tags for the Features filter
 }
 
 /// <summary>Flattens an <see cref="InspectionResult"/> into report rows, keeping only equipment.</summary>
@@ -45,12 +48,17 @@ public static class ItemReport
             foreach (var tab in s.Tabs)
                 foreach (var it in tab.Items) Add(rows, it, "Shared Stash", $"Tab {tab.Index + 1}");
 
-        // Distinct set pieces owned per set (across all saves) for the "(x / n Items)" tooltip line.
+        // Distinct set pieces owned per set (across all saves) for the "(x / n Items)" tooltip line
+        // and the "Missing:" list (pieces of the set the user doesn't have).
         var owned = rows.Where(r => r.Set is not null && r.SetSize > 0)
             .GroupBy(r => r.Set!)
-            .ToDictionary(g => g.Key, g => g.Select(r => r.Name).Distinct().Count());
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Name).Distinct().ToHashSet());
         foreach (var r in rows)
-            if (r.Set is not null && owned.TryGetValue(r.Set, out int x)) r.SetOwned = x;
+            if (r.Set is not null && owned.TryGetValue(r.Set, out var names))
+            {
+                r.SetOwned = names.Count;
+                r.SetMissing = r.SetPieces.Where(p => !names.Contains(p)).ToList();
+            }
         return rows;
     }
 
@@ -68,6 +76,7 @@ public static class ItemReport
             BaseQuality = it.BaseQuality.ToString(),
             Set = it.SetName,
             SetSize = it.SetSize,
+            SetPieces = it.SetPieces,
             SetBonuses = it.SetBonuses,
             Sockets = it.SocketCount,
             SocketItems = it.Sockets,
@@ -79,6 +88,7 @@ public static class ItemReport
             Owner = owner,
             Source = source,
             Stats = it.Stats,
+            Features = it.Features,
         });
     }
 
