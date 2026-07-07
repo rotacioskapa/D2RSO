@@ -24,6 +24,7 @@ public sealed class ReportRow
     public int ReqDex { get; init; }
     public string? Class { get; init; }             // allowed class (null = usable by all)
     public bool Eth { get; init; }
+    public string? WikiUrl { get; set; }            // diablo.fandom.com link (uniques/sets, if the page exists)
     public string Owner { get; init; } = "";
     public string Source { get; init; } = "";
     public List<StatLine> Stats { get; init; } = new(); // formatted mod lines for the hover tooltip

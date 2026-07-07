@@ -37,18 +37,35 @@ public sealed class ItemEnricher
 
     private readonly SetBonusResolver _setBonuses;
 
-    private string? SkillName(int id) =>
-        _skillNames.TryGetValue(id, out var n) && !string.IsNullOrWhiteSpace(n) ? n : null;
+    // A few skills carry an internal name in skills.txt that differs from the in-game display name.
+    private static readonly Dictionary<string, string> SkillNameFixups = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["DiabWall"] = "Firestorm", ["Plague Poppy"] = "Poison Creeper", ["Eruption"] = "Fissure",
+    };
 
-    // Skill-tree names per class, from the SkillCategory<code><1-3> string keys (localTab 0 -> "...1").
+    private string? SkillName(int id)
+    {
+        if (!_skillNames.TryGetValue(id, out var n) || string.IsNullOrWhiteSpace(n)) return null;
+        return SkillNameFixups.GetValueOrDefault(n, n);
+    }
+
+    // Skill-tree names per class, from the SkillCategory<code><1-3> string keys. The strings are
+    // numbered in REVERSE of the item's tab index (tab 0 = "...3"), matching the game's tab layout
+    // (e.g. Paladin tab 0 = Combat Skills). Amazon/Warlock category strings are bare (e.g. "Demon",
+    // "Bow and Crossbow"); the game shows those with a "Skills" suffix.
     private static string[][] BuildSkillTabs(StringTable strings)
     {
         var tabs = new string[ClassCodes.Length][];
         for (int c = 0; c < ClassCodes.Length; c++)
         {
             tabs[c] = new string[3];
+            bool suffix = c is 0 or 7; // Amazon, Warlock
             for (int t = 0; t < 3; t++)
-                tabs[c][t] = strings.Get($"SkillCategory{ClassCodes[c]}{t + 1}") ?? "Skill";
+            {
+                string name = strings.Get($"SkillCategory{ClassCodes[c]}{3 - t}") ?? "Skill";
+                if (suffix && !name.EndsWith("Skills")) name += " Skills";
+                tabs[c][t] = name;
+            }
         }
         return tabs;
     }

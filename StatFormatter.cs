@@ -16,7 +16,7 @@ public static class StatFormatter
     // Internal/structural stats or durations shown elsewhere (or folded into another line).
     private static readonly HashSet<string> Skip = new()
     {
-        "item_numsockets", "item_levelreq", "item_levelreqpct", "item_req_percent", "coldlength",
+        "item_numsockets", "item_levelreq", "item_levelreqpct", "coldlength",
         "item_extrablood", // internal, not shown in-game
     };
 
@@ -222,7 +222,19 @@ public static class StatFormatter
             "item_absorb_fire_perlevel" => PerLevel(v, "Fire Absorb"),
             "item_absorb_ltng_perlevel" => PerLevel(v, "Lightning Absorb"),
             "item_absorb_pois_perlevel" => PerLevel(v, "Poison Absorb"),
-            "item_freeze" => $"Freezes Target +{v}",
+            "item_freeze" => "Freezes Target",
+            "item_slow" => $"Slows Target by {v}%",
+            "item_preventheal" => "Prevent Monster Heal",
+            "item_req_percent" => $"Requirements {v}%",
+            "item_staminadrainpct" => $"{v}% Slower Stamina Drain",
+            "item_normaldamage" => $"Damage {Plus(v)}",
+            "item_magicarrow" => "Fires Magic Arrows",
+            "item_extra_stack" => "Increased Stack Size",
+            "item_howl" => $"Hit Causes Monster to Flee {v}%",
+            "item_damagetargetac" => $"-{v}% Target Defense",
+            "item_reanimate" => $"{v}% Chance to Reanimate Target",
+            "item_explosivearrow" => "Fires Explosive Arrows or Bolts",
+            "item_aura" => $"Level {v} {Skill(s.Param)} Aura When Equipped",
             "item_pierce" => $"{v}% Piercing Attack",
             "item_knockback" => "Knockback",
             "toblock" => $"+{v}% Increased Chance to Block",
@@ -252,6 +264,9 @@ public static class StatFormatter
             "item_maxdamage_percent_perlevel" => PerLevelPct(v, "Enhanced Maximum Damage"),
             "item_deadlystrike_perlevel" => PerLevelPct(v, "Deadly Strike"),
             "item_tohit_perlevel" => PerLevel(v, "to Attack Rating"),
+            "item_tohit_demon_perlevel" => PerLevel(v, "to Attack Rating against Demons"),
+            "item_tohitpercent_perlevel" => PerLevelPct(v, "Bonus to Attack Rating"),
+            "item_regenstamina_perlevel" => StaminaPerLevel(v),
             "item_find_magic_perlevel" => PerLevel(v, "% Better Chance of Magic Items"),
             "item_find_gold_perlevel" => PerLevel(v, "% Extra Gold from Monsters"),
             _ => Humanize(s.Stat, v),
@@ -265,6 +280,15 @@ public static class StatFormatter
     // Same, but for percentage stats where the "%" hugs the number: "+0.5% Deadly Strike".
     private static string PerLevelPct(int v, string what) =>
         $"+{(v / 8.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}% {what} (Based on Character Level)";
+
+    // Stamina-regen-per-level shows the per-level rate and the level-1..99 range, e.g. Natalya's Soul:
+    // "Heal Stamina Plus (0.25 Per Character Level) 0-24% (Based on Character Level)".
+    private static string StaminaPerLevel(int v)
+    {
+        double rate = v / 8.0;
+        string r = rate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        return $"Heal Stamina Plus ({r} Per Character Level) 0-{(int)(rate * 99)}% (Based on Character Level)";
+    }
 
     // Readable fallback for an unmapped stat (e.g. "item_some_stat" -> "Some Stat: +3").
     private static string? Humanize(string stat, int v)

@@ -29,5 +29,6 @@ Thumbs.db
 # Claude Code personal/local settings (per-user, not shared)
 .claude/settings.local.json
 
-# Generated HTML report
+# Generated HTML report + wiki-link existence cache
 items.html
+.wiki-link-cache.json
