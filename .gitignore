@@ -29,9 +29,8 @@ Thumbs.db
 # Claude Code personal/local settings (per-user, not shared)
 .claude/settings.local.json
 
-# Generated HTML report + wiki-link existence cache
+# Generated HTML report (the wiki-link cache lives in %LOCALAPPDATA%\D2RItemInspector, not here)
 items.html
-.wiki-link-cache.json
 
 # Release publish output
 publish/

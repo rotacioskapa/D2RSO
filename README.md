@@ -146,4 +146,5 @@ renders the text report.
   Charm"*) — that's just the older data table's text, not a parsing error.
 - Because RotW is its own expansion, some item stats intentionally differ from vanilla D2 (and from
   the vanilla-focused wiki) — those differences are expected, not bugs.
-- `items.html` and `.wiki-link-cache.json` are generated artifacts (git-ignored).
+- `items.html` is written next to the app when it runs. The wiki-link existence cache is kept out of
+  the way in `%LOCALAPPDATA%\D2RItemInspector\wiki-link-cache.json` (delete it to force a re-check).

@@ -9,13 +9,23 @@ public static class HtmlReport
     public static void Write(InspectionResult result, string path)
     {
         var rows = ItemReport.Build(result);
-        string dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
-        WikiLinker.Annotate(rows, Path.Combine(dir, ".wiki-link-cache.json"));
+        WikiLinker.Annotate(rows, WikiCachePath());
         string json = JsonSerializer.Serialize(rows);
         string html = Template
             .Replace("__DATA__", json)
             .Replace("__GENERATED__", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         File.WriteAllText(path, html);
+    }
+
+    // The wiki-link existence cache is an internal artifact, so keep it in the per-user cache
+    // location (%LOCALAPPDATA%\D2RItemInspector) instead of cluttering the exe's directory.
+    private static string WikiCachePath()
+    {
+        string baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrEmpty(baseDir)) baseDir = Path.GetTempPath();
+        string dir = Path.Combine(baseDir, "D2RItemInspector");
+        Directory.CreateDirectory(dir);
+        return Path.Combine(dir, "wiki-link-cache.json");
     }
 
     private const string Template = """
