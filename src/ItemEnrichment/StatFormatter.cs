@@ -1,6 +1,8 @@
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>
 /// Turns an item's raw magical stats into readable mod lines for the hover tooltip. Best-effort:

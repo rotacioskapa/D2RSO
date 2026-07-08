@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace D2RItemInspector;
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>
 /// Loads D2R JSON string tables (data/local/lng/strings/*.json) into a Key → enUS lookup.

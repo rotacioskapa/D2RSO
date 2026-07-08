@@ -1,6 +1,8 @@
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>Maps parsed <see cref="Item"/>s to <see cref="ItemData"/>, resolving names, stack
 /// quantities, and the enriched report fields.</summary>

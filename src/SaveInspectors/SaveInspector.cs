@@ -1,4 +1,7 @@
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+using D2RItemInspector.ItemEnrichment;
+
+namespace D2RItemInspector.SaveInspectors;
 
 /// <summary>
 /// Entry point for reading a Diablo II save directory. <see cref="Collect"/> returns all items from

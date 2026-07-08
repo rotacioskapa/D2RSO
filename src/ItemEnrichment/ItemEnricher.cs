@@ -2,7 +2,9 @@ using D2SLib;
 using D2SLib.Model.Data;
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>
 /// Derives the rich report fields for an item (type/base/tier, rarity/color, required level/str/dex,

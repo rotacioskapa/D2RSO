@@ -1,5 +1,7 @@
 using System.Diagnostics;
-using D2RItemInspector;
+using D2RItemInspector.Model;
+using D2RItemInspector.SaveInspectors;
+using D2RItemInspector.Report;
 
 // Default: collect all saves and write/open a self-contained items.html report.
 // `--print`: print the text report to the console instead (the old behaviour).

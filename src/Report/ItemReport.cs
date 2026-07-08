@@ -1,4 +1,6 @@
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.Report;
 
 /// <summary>One equipment item flattened for the report, with the owner/placement context that a
 /// bare <see cref="ItemData"/> doesn't carry.</summary>

@@ -2,7 +2,10 @@ using D2SLib;
 using D2SLib.IO;
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+using D2RItemInspector.ItemEnrichment;
+
+namespace D2RItemInspector.SaveInspectors;
 
 /// <summary>
 /// Reads a .d2i shared-stash file into a <see cref="StashData"/> by walking its tabs. Each tab is a

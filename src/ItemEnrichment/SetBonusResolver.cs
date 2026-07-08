@@ -1,4 +1,4 @@
-namespace D2RItemInspector;
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>
 /// Loads the whole-set bonuses from sets.txt: partial bonuses (PCode, granted at N equipped set

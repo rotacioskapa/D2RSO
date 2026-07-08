@@ -1,4 +1,4 @@
-namespace D2RItemInspector;
+namespace D2RItemInspector.Model;
 
 public enum ItemRarity { LowQuality, Normal, Superior, Magic, Rare, Crafted, Set, Unique }
 

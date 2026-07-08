@@ -1,7 +1,7 @@
 using D2SLib;
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+namespace D2RItemInspector.ItemEnrichment;
 
 /// <summary>
 /// Resolves a fully-qualified display name for an item — unique/set/runeword/magic/rare names

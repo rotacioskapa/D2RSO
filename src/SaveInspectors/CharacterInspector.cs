@@ -1,7 +1,10 @@
 using D2SLib;
 using D2SLib.Model.Save;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+using D2RItemInspector.ItemEnrichment;
+
+namespace D2RItemInspector.SaveInspectors;
 
 /// <summary>Reads a .d2s character save into a <see cref="CharacterData"/> (inventory, corpse, merc, golem).</summary>
 public sealed class CharacterInspector

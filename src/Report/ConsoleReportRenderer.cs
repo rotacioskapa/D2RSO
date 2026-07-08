@@ -1,4 +1,6 @@
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.Report;
 
 /// <summary>Renders an <see cref="InspectionResult"/> to the console — the program's standalone output.</summary>
 public static class ConsoleReportRenderer

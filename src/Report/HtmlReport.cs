@@ -1,6 +1,8 @@
 using System.Text.Json;
 
-namespace D2RItemInspector;
+using D2RItemInspector.Model;
+
+namespace D2RItemInspector.Report;
 
 /// <summary>Writes a self-contained HTML page (inline CSS+JS, data embedded) of all equipment items
 /// with client-side filtering. Open it from disk; re-run the app and reload to refresh.</summary>

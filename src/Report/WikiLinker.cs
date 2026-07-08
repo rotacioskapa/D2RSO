@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace D2RItemInspector;
+namespace D2RItemInspector.Report;
 
 /// <summary>
 /// Adds diablo.fandom.com wiki links to unique/set/runeword rows. The display name maps to a wiki

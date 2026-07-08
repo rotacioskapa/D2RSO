@@ -122,20 +122,22 @@ renders the text report.
 
 ## Project layout
 
+App source lives under `src/`, grouped by responsibility:
+
 | Path | Purpose |
 |------|---------|
-| `Program.cs` | Entry point: collect → write/open `items.html` (or `--print` the console report) |
-| `SaveInspector.cs` | Public API: scans the save dir, returns `InspectionResult` |
-| `InspectionModel.cs` | Data model (`CharacterData`, `StashData`, `ItemData`, …) |
-| `CharacterInspector.cs` / `SharedStashInspector.cs` | Read one `.d2s` / `.d2i` into data |
-| `ItemMapping.cs` / `ItemEnricher.cs` | Map a parsed item to the report model (rarity, type, req level, sockets, features, …) |
-| `ItemNameResolver.cs` / `StringTable.cs` | Name resolution (unique/set/runeword/magic/rare) via the game string tables |
-| `StatFormatter.cs` | Turns raw item stats into readable in-game-style mod lines |
-| `SetBonusResolver.cs` | Whole-set bonuses (partial + full-set) for the Set tooltip |
-| `WikiLinker.cs` | Adds & verifies diablo.fandom.com links for uniques/sets/runewords |
-| `ItemReport.cs` | Flattens an `InspectionResult` into equipment report rows |
-| `HtmlReport.cs` | Renders the self-contained, filterable `items.html` |
-| `ConsoleReportRenderer.cs` | Renders an `InspectionResult` to the console (`--print`) |
+| `src/Program.cs` | Entry point: collect → write/open `items.html` (or `--print` the console report) |
+| `src/Model/InspectionModel.cs` | Data model (`CharacterData`, `StashData`, `ItemData`, …) |
+| `src/SaveInspectors/SaveInspector.cs` | Public API: scans the save dir, returns `InspectionResult` |
+| `src/SaveInspectors/CharacterInspector.cs` · `SharedStashInspector.cs` | Read one `.d2s` / `.d2i` into data |
+| `src/ItemEnrichment/ItemMapping.cs` · `ItemEnricher.cs` | Map a parsed item to the report model (rarity, type, req level, sockets, features, …) |
+| `src/ItemEnrichment/ItemNameResolver.cs` · `StringTable.cs` | Name resolution (unique/set/runeword/magic/rare) via the game string tables |
+| `src/ItemEnrichment/StatFormatter.cs` | Turns raw item stats into readable in-game-style mod lines |
+| `src/ItemEnrichment/SetBonusResolver.cs` | Whole-set bonuses (partial + full-set) for the Set tooltip |
+| `src/Report/WikiLinker.cs` | Adds & verifies diablo.fandom.com links for uniques/sets/runewords |
+| `src/Report/ItemReport.cs` | Flattens an `InspectionResult` into equipment report rows |
+| `src/Report/HtmlReport.cs` | Renders the self-contained, filterable `items.html` |
+| `src/Report/ConsoleReportRenderer.cs` | Renders an `InspectionResult` to the console (`--print`) |
 | `D2SLib-D2R/` | Vendored, modified [D2SLib](https://github.com/locbones/D2SLib-D2R) with RotW + pre-RotW parsing support |
 
 ### Notes
