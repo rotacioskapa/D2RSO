@@ -55,6 +55,7 @@ public static class HtmlReport
   .tip .tipfull { color:#22d422; }
   .tip .tippart { color:#ffff64; }
   .tip .tipmiss { color:#d9a066; }
+  .tip .tipital { font-style:italic; color:#999; }
   .tip .tipsub { font-weight:600; color:#9a8fd6; margin-top:5px; }
   .tip .tipdiv { border-top:1px solid #444; margin-top:6px; padding-top:5px; }
   td.setlink { cursor:pointer; }
@@ -93,6 +94,7 @@ public static class HtmlReport
   <label>Required lvl<input id="f-lmax" type="number" min="0"></label>
   <label class="chk"><input id="f-rw" type="checkbox">Runewords only</label>
   <label class="chk"><input id="f-eth" type="checkbox">Ethereal only</label>
+  <label class="chk"><input id="f-emptysock" type="checkbox">Items with empty sockets</label>
   <label class="chk"><input id="f-dup" type="checkbox">Duplicate uniques/sets</label>
   <label class="chk"><button id="f-reset" type="button">Reset</button></label>
 </div>
@@ -173,9 +175,11 @@ fillSelect($('f-owner'), distinct('Owner'), 'All');
 let sortKey = 'Name', sortDir = 1, setFilter = '';
 
 function rowHtml(r){
-  const sock = r.Sockets>0
-    ? '<span class="sock"'+(r.SocketItems.length?' title="'+esc(r.SocketItems.join(', '))+'"':'')+'>'+r.Sockets+'</span>'
-    : '<span class="muted">&mdash;</span>';
+  const emptyN = Math.max(0, r.Sockets-(r.SocketItems||[]).length);
+  const sockTip = (r.SocketItems||[]).map(s => ({Text:s})).concat(Array(emptyN).fill(0).map(() => ({Text:'empty', Italic:true})));
+  const sockCell = r.Sockets>0
+    ? '<td data-tip="'+esc(JSON.stringify(sockTip))+'"><span class="sock">'+r.Sockets+'</span></td>'
+    : '<td><span class="muted">&mdash;</span></td>';
   const cell = v => '<td>'+(v===''||v==null?'<span class="muted">&mdash;</span>':esc(v))+'</td>';
   const nmText = r.WikiUrl
     ? '<a class="wiki" href="'+esc(r.WikiUrl)+'" target="_blank" rel="noopener">'+esc(r.Name)+'</a>'
@@ -200,7 +204,7 @@ function rowHtml(r){
     + '<td class="'+esc(r.Color)+'"'+tip+'>'+nm+'</td>'
     + '<td>'+esc(r.Owner)+' &middot; <span class="muted">'+esc(r.Source)+'</span></td>'
     + cell(r.Type) + cell(r.Base) + cell(r.BaseQuality) + setCell
-    + '<td>'+sock+'</td>'
+    + sockCell
     + cell(r.ReqLevel||'') + cell(r.ReqStr||'') + cell(r.ReqDex||'')
     + cell(r.Class)
     + '</tr>';
@@ -215,6 +219,7 @@ function render(){
   const cls = $('f-class').value, owner = $('f-owner').value;
   const lmax = $('f-lmax').value==='' ? Infinity : parseInt($('f-lmax').value);
   const rwOnly = $('f-rw').checked, ethOnly = $('f-eth').checked, dupOnly = $('f-dup').checked;
+  const emptySock = $('f-emptysock').checked;
 
   let out = DATA.filter(r =>
     (!setFilter || r.Set===setFilter) &&
@@ -228,6 +233,7 @@ function render(){
     (r.ReqLevel<=lmax) &&
     (!rwOnly || r.Runeword) &&
     (!ethOnly || r.Eth) &&
+    (!emptySock || (r.Sockets>0 && (r.SocketItems||[]).length===0)) &&
     (!dupOnly || DUP_KEYS.has(dupKey(r))));
 
   out.sort((a,b) => {
@@ -249,7 +255,7 @@ document.querySelectorAll('th[data-key]').forEach(th => th.addEventListener('cli
   th.classList.add('sorted');
   render();
 }));
-['f-name','f-class','f-owner','f-lmax','f-rw','f-eth','f-dup'].forEach(id => $(id).addEventListener('input', render));
+['f-name','f-class','f-owner','f-lmax','f-rw','f-eth','f-emptysock','f-dup'].forEach(id => $(id).addEventListener('input', render));
 // Click a set name to filter to that set (click it again, or the clear link, to remove the filter).
 $('rows').addEventListener('click', e => {
   const td = e.target.closest('td.setlink');
@@ -283,7 +289,7 @@ rowsEl.addEventListener('mouseover', e => {
   if (td) {
     const lines = JSON.parse(td.dataset.tip);
     tipEl.innerHTML = lines.map(s => {
-      let c = s.Head ? 'tiphead '+(s.Full?'tipfull':'tippart') : s.Bhead ? 'tipsub' : s.Miss ? 'tipmiss' : s.Set ? 'setb' : '';
+      let c = s.Head ? 'tiphead '+(s.Full?'tipfull':'tippart') : s.Bhead ? 'tipsub' : s.Miss ? 'tipmiss' : s.Italic ? 'tipital' : s.Set ? 'setb' : '';
       if (s.Div) c = (c ? c+' ' : '')+'tipdiv';
       return '<div'+(c?' class="'+c+'"':'')+'>'+esc(s.Text)+'</div>';
     }).join('');
