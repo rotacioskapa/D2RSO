@@ -6,7 +6,9 @@ using D2RItemInspector;
 // Real Diablo II: Resurrected save folder (characters + shared stash).
 const string saveDirPath = @"%USERPROFILE%\Saved Games\Diablo II Resurrected";
 string saveDir = Environment.ExpandEnvironmentVariables(saveDirPath);
-const string resourceDir = @"D2SLib-D2R\src\Resources";
+// Data tables are copied next to the executable (and bundled into the single-file exe), so resolve
+// them relative to the app, not the current working directory.
+string resourceDir = Path.Combine(AppContext.BaseDirectory, "Resources");
 const string outputFile = "items.html";
 
 var inspector = new SaveInspector(saveDir, resourceDir);

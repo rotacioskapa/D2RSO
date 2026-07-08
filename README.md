@@ -3,6 +3,15 @@
 Browse and filter **every item** across all your offline Diablo II: Resurrected characters and the
 shared stash, in one self-contained web page. Works with **Return of the Warlock** characters too.
 
+## Download
+
+Grab the latest ready-to-run **`D2RItemInspector.exe`** from the
+[**Releases** page](../../releases/latest) — a single self-contained Windows (x64) executable, no
+.NET install required. Download it, put it anywhere, and double-click: it reads your live save folder
+and opens the item report in your browser.
+
+Prefer to build from source? See [Build & run](#build--run) below.
+
 ## What it does
 
 Parses Diablo II: Resurrected save files and, by default, generates a self-contained **`items.html`**
