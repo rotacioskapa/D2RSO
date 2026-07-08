@@ -150,3 +150,8 @@ App source lives under `src/`, grouped by responsibility:
   the vanilla-focused wiki) — those differences are expected, not bugs.
 - `items.html` is written next to the app when it runs. The wiki-link existence cache is kept out of
   the way in `%LOCALAPPDATA%\D2RItemInspector\wiki-link-cache.json` (delete it to force a re-check).
+
+## Development
+
+Much of this codebase was written with the assistance of **Claude Code**, using Anthropic's
+**Claude Opus 4.8** model.
