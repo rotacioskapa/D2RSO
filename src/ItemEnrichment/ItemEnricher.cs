@@ -139,6 +139,14 @@ public sealed class ItemEnricher
         "item_cannotbefrozen", "item_restinpeace", "item_indesctructible",
     };
 
+    // Any kind of skill-level bonus: a single skill, a skill tree, elemental skills, class skills,
+    // or all skills (e.g. "+2 to Martial Arts"). Charges / chance-to-cast are not skill bonuses.
+    private static readonly string[] SkillStats =
+    {
+        "item_allskills", "item_addclassskills", "item_addskill_tab", "item_elemskill",
+        "item_singleskill", "item_nonclassskill", "item_oskill",
+    };
+
     private static List<string> ExtractFeatures(Item item)
     {
         var found = new SortedSet<string>(StringComparer.Ordinal);
@@ -154,6 +162,8 @@ public sealed class ItemEnricher
             found.Add("All Resistances");
         if (AllEqual(byName, "strength", "dexterity", "vitality", "energy"))
             found.Add("+ All Attributes");
+        if (SkillStats.Any(s => byName.TryGetValue(s, out int v) && v > 0))
+            found.Add("+ to Skill(s)");
         return found.ToList();
     }
 

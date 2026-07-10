@@ -129,7 +129,7 @@ const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<
 const CLASSES = ["Amazon","Sorceress","Necromancer","Paladin","Barbarian","Druid","Assassin","Warlock"];
 const RARITIES = ["Normal","Magic","Rare","Crafted","Set","Unique"];
 const QUALITIES = ["Normal","Exceptional","Elite"];
-const FEATURES = ["+ All Attributes","+ to Dexterity","+ to Life","+ to Mana","+ to Strength","All Resistances","Better Chance of Getting Magic Items","Cannot Be Frozen","Chance of Crushing Blow","Chance of Open Wounds","Cold Resist","Faster Cast Rate","Faster Hit Recovery","Faster Run/Walk","Fire Resist","Increased Attack Speed","Indestructible","Life Stolen per Hit","Lightning Resist","Poison Resist","Slain Monsters Rest in Peace"];
+const FEATURES = ["+ All Attributes","+ to Dexterity","+ to Life","+ to Mana","+ to Skill(s)","+ to Strength","All Resistances","Better Chance of Getting Magic Items","Cannot Be Frozen","Chance of Crushing Blow","Chance of Open Wounds","Cold Resist","Faster Cast Rate","Faster Hit Recovery","Faster Run/Walk","Fire Resist","Increased Attack Speed","Indestructible","Life Stolen per Hit","Lightning Resist","Poison Resist","Slain Monsters Rest in Peace"];
 const distinct = key => [...new Set(DATA.map(r => r[key]).filter(v => v!=null && v!==''))].sort();
 
 // Items you own 2+ copies of, among uniques/sets only. Keyed on name+type+rarity so that two

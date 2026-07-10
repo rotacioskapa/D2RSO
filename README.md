@@ -138,7 +138,7 @@ App source lives under `src/`, grouped by responsibility:
 | `src/Report/ItemReport.cs` | Flattens an `InspectionResult` into equipment report rows |
 | `src/Report/HtmlReport.cs` | Renders the self-contained, filterable `items.html` |
 | `src/Report/ConsoleReportRenderer.cs` | Renders an `InspectionResult` to the console (`--print`) |
-| `D2SLib-D2R/` | Vendored, modified [D2SLib](https://github.com/locbones/D2SLib-D2R) with RotW + pre-RotW parsing support |
+| `D2SLib-D2R/` | Vendored, modified [D2SLib](https://github.com/locbones/D2SLib-D2R) (MIT) with RotW + pre-RotW parsing support |
 
 ### Notes
 
@@ -150,6 +150,13 @@ App source lives under `src/`, grouped by responsibility:
   the vanilla-focused wiki) — those differences are expected, not bugs.
 - `items.html` is written next to the app when it runs. The wiki-link existence cache is kept out of
   the way in `%LOCALAPPDATA%\D2RItemInspector\wiki-link-cache.json` (delete it to force a re-check).
+
+## License
+
+This project is released under the **MIT License** — see [`LICENSE`](LICENSE). It bundles the
+MIT-licensed [D2SLib](https://github.com/locbones/D2SLib-D2R) library (© 2021 dschu012); its license
+and the full attribution are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) and
+`D2SLib-D2R/LICENSE`.
 
 ## Development
 
