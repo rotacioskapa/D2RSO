@@ -5,6 +5,17 @@ description when the matching `v<x.y.z>` tag is pushed (see `.github/workflows/r
 release: add a new section at the top, then push the tag. A trailing ` — <date>` on the heading is
 fine (e.g. `## v1.1.0 — 2026-08-01`).
 
+## v1.0.1
+
+### Added
+- **Features filter — `+ to Skill(s)`**: matches any item that grants a skill-level bonus — a single
+  skill, a skill tree (e.g. "+2 to Martial Arts"), elemental skills, class skills, or all skills.
+
+### Internal / packaging
+- Source reorganized under `src/` with folder-matching namespaces.
+- Added third-party license notices (`THIRD-PARTY-NOTICES.md`); releases now include the `LICENSE`
+  and notices alongside the `.exe`.
+
 ## v1.0.0
 
 Browse and filter **every item** across all your offline Diablo II: Resurrected characters and shared
